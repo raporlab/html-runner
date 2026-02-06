@@ -3,76 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live HTML Runner</title>
+    <title>Advanced HTML Runner</title>
     <style>
+        :root { --primary: #007acc; --bg: #1e1e1e; --border: #444; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1e1e1e; color: white; height: 100vh; display: flex; flex-direction: column; }
-        header { padding: 1rem; background: #2d2d2d; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
-        .container { display: flex; flex: 1; overflow: hidden; }
-        .editors { width: 50%; display: flex; flex-direction: column; border-right: 2px solid #444; }
-        .editor-section { flex: 1; display: flex; flex-direction: column; padding: 10px; border-bottom: 1px solid #333; }
-        label { font-size: 12px; color: #aaa; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
-        textarea { flex: 1; background: #252526; color: #d4d4d4; border: 1px solid #3c3c3c; padding: 10px; font-family: 'Consolas', monospace; resize: none; outline: none; border-radius: 4px; }
-        textarea:focus { border-color: #007acc; }
-        .preview { width: 50%; background: white; }
+        body { font-family: sans-serif; background: var(--bg); color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        header { padding: 10px 20px; background: #2d2d2d; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        
+        .main-container { display: flex; flex: 1; position: relative; overflow: hidden; }
+
+        /* Sol Panel: Editörler */
+        .editor-container { width: 50%; display: flex; flex-direction: column; min-width: 100px; }
+        
+        /* Sekme Sistemi */
+        .tabs { display: flex; background: #252526; border-bottom: 1px solid var(--border); }
+        .tab { padding: 10px 20px; cursor: pointer; border-right: 1px solid var(--border); font-size: 13px; color: #aaa; }
+        .tab.active { background: var(--bg); color: white; border-bottom: 2px solid var(--primary); }
+
+        .editor-area { flex: 1; position: relative; }
+        textarea { width: 100%; height: 100%; position: absolute; top: 0; left: 0; background: var(--bg); color: #d4d4d4; border: none; padding: 15px; font-family: 'Consolas', monospace; resize: none; outline: none; visibility: hidden; }
+        textarea.active { visibility: visible; }
+
+        /* Ayırıcı (Resizer) */
+        .resizer { width: 8px; cursor: col-resize; background: #333; transition: background 0.2s; }
+        .resizer:hover { background: var(--primary); }
+
+        /* Sağ Panel: Önizleme */
+        .preview-container { flex: 1; background: white; min-width: 100px; }
         iframe { width: 100%; height: 100%; border: none; }
-        button { background: #007acc; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #005a9e; }
+
+        button { background: var(--primary); color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <header>
-    <h2>HTML Runner</h2>
-    <button onclick="run()">Kodu Çalıştır (Run)</button>
+    <h3>DevRunner</h3>
+    <button onclick="run()">Çalıştır</button>
 </header>
 
-<div class="container">
-    <div class="editors">
-        <div class="editor-section">
-            <label>HTML</label>
-            <textarea id="html-code" placeholder="<html> yazın..."></textarea>
+<div class="main-container" id="container">
+    <div class="editor-container" id="left-panel">
+        <div class="tabs">
+            <div class="tab active" onclick="openTab(event, 'html-code')">HTML</div>
+            <div class="tab" onclick="openTab(event, 'css-code')">CSS</div>
+            <div class="tab" onclick="openTab(event, 'js-code')">JS</div>
         </div>
-        <div class="editor-section">
-            <label>CSS</label>
-            <textarea id="css-code" placeholder="body { background: #eee; }"></textarea>
-        </div>
-        <div class="editor-section">
-            <label>JavaScript</label>
-            <textarea id="js-code" placeholder="console.log('Merhaba!');"></textarea>
+        <div class="editor-area">
+            <textarea id="html-code" class="active" placeholder="HTML kodlarını buraya yazın..."></textarea>
+            <textarea id="css-code" placeholder="CSS kodlarını buraya yazın..."></textarea>
+            <textarea id="js-code" placeholder="JavaScript kodlarını buraya yazın..."></textarea>
         </div>
     </div>
 
-    <div class="preview">
+    <div class="resizer" id="drag-bar"></div>
+
+    <div class="preview-container" id="right-panel">
         <iframe id="output" sandbox="allow-scripts"></iframe>
     </div>
 </div>
 
 <script>
+    // Sekme Geçişleri
+    function openTab(evt, tabId) {
+        document.querySelectorAll('textarea').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        evt.currentTarget.classList.add('active');
+    }
+
+    // Kod Çalıştırma
     function run() {
         const html = document.getElementById("html-code").value;
-        const css = "<style>" + document.getElementById("css-code").value + "</style>";
-        const js = "<script>" + document.getElementById("js-code").value + "<\/script>";
+        const css = `<style>${document.getElementById("css-code").value}</style>`;
+        const js = `<script>${document.getElementById("js-code").value}<\/script>`;
         const output = document.getElementById("output");
 
-        const fullCode = `
-            <!DOCTYPE html>
-            <html>
-                <head>${css}</head>
-                <body>
-                    ${html}
-                    ${js}
-                </body>
-            </html>
-        `;
-
-        const blob = new Blob([fullCode], { type: 'text/html' });
+        const content = `<!DOCTYPE html><html><head>${css}</head><body>${html}${js}</body></html>`;
+        const blob = new Blob([content], { type: 'text/html' });
         output.src = URL.createObjectURL(blob);
     }
 
-    // İlk çalışma için boş çalıştır
+    // Sağa Sola Kaydırma (Resizing) Mantığı
+    const leftPanel = document.getElementById('left-panel');
+    const dragBar = document.getElementById('drag-bar');
+    const container = document.getElementById('container');
+
+    let isDragging = false;
+
+    dragBar.addEventListener('mousedown', () => isDragging = true);
+    document.addEventListener('mouseup', () => isDragging = false);
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        let containerRect = container.getBoundingClientRect();
+        let newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+        
+        if (newWidth > 10 && newWidth < 90) { // Sınırlandırma
+            leftPanel.style.width = newWidth + '%';
+        }
+    });
+
+    // Başlangıçta çalıştır
     run();
 </script>
-
 </body>
 </html>
